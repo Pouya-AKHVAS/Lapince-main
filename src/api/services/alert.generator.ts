@@ -1,31 +1,17 @@
-// -----------------------------------------------------------------------------
-// generateBudgetAlert
-// -----------------------------------------------------------------------------
-// Cette fonction est responsable de vérifier si un budget a été dépassé et,
-// si c’est le cas, de créer une alerte pour l’utilisateur. Elle est appelée
-// immédiatement après la création d’une transaction, car chaque nouvelle
-// dépense peut potentiellement faire dépasser un budget.
-//
-// Étapes :
-// 1. Récupérer le budget concerné avec toutes ses transactions et sa catégorie.
-// 2. Calculer le total dépensé dans ce budget.
-// 3. Vérifier si le budget est dépassé. Si non → aucune action.
-// 4. Calculer le montant dépassé (exceededAmount).
-// 5. Vérifier si une alerte existe déjà pour cette catégorie afin d’éviter
-//    la création de doublons.
-// 6. Si aucune alerte n’existe → créer une nouvelle alerte.
-// 7. Retourner l’alerte créée ou existante.
-//
-// Cette logique garantit :
-// - qu’une seule alerte est créée par catégorie,
-// - qu’elle est générée au bon moment (après une transaction),
-// - qu’elle contient les informations nécessaires pour l’interface utilisateur.
-// -----------------------------------------------------------------------------
-
 import { prisma } from "../lib/prisma.js";
 
+/**
+ * Génère, actualise ou supprime de manière dynamique les alertes budgétaires d'un utilisateur.
+ * Cette fonction est le cœur du système de monitoring des dépenses : elle est déclenchée
+ * après chaque création, modification ou suppression de transaction afin de garantir
+ * la synchronisation parfaite en temps réel entre les dépenses et les plafonds définis.
+ * * @param budgetId - L'identifiant unique du budget à analyser
+ * @param userId - L'identifiant de l'utilisateur propriétaire du budget (isolation des données)
+ */
 export const generateBudgetAlert = async (budgetId: number, userId: number) => {
-  // 1. Récupérer le budget avec ses transactions et sa catégorie
+  
+  // 1. EXTRACTION DE L'ENVELOPPE BUDGÉTAIRE
+  // On récupère le budget ciblé en y joignant sa catégorie pour connaître les règles de calcul.
   const budget = await prisma.budget.findFirst({
     where: { id: budgetId, userId },
     include: {
@@ -33,24 +19,40 @@ export const generateBudgetAlert = async (budgetId: number, userId: number) => {
     },
   });
 
-  // Si le budget n'existe pas → rien à faire
+  // Sécurité passive : Si le budget n'existe pas ou n'appartient pas à l'utilisateur, on stoppe immédiatement.
   if (!budget) return null;
 
-  // 2. Calcul du total dépensé
+  // 2. CALCUL AGRÉGÉ DES DÉPENSES REELLES
+  // On récupère l'ensemble des transactions associées à cette catégorie spécifique pour l'utilisateur.
   const transactionsForCategory = await prisma.transaction.findMany({
     where: { userId, categoryId: budget.category.id },
   });
-  // Les dépenses sont stockées en positif → on somme directement
-  const spent = transactionsForCategory
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+  
+  // Les dépenses étant stockées sous forme de valeurs positives, on réalise une somme cumulative (reduce).
+  const spent = transactionsForCategory.reduce((sum, t) => sum + Number(t.amount), 0);
 
-  // 3. Si le budget n'est pas dépassé → aucune alerte
-  if (spent <= budget.limit_amount) return null;
+  // -------------------------------------------------------------------------
+  // CORRECTION BUG 1 : NETTOYAGE AUTOMATIQUE (RETOUR AU VERT)
+  // -------------------------------------------------------------------------
+  // Si le total dépensé est inférieur ou égal à la limite du budget (cas typique
+  // après la suppression d'une dépense ou une modification à la baisse),
+  // l'alerte n'a plus lieu d'exister. On la supprime de la base de données.
+  if (spent <= budget.limit_amount) {
+    await prisma.alert.deleteMany({
+      where: {
+        userId,
+        categoryId: budget.category.id,
+      },
+    });
+    return null; // Le budget est assaini, on retourne null pour signifier l'absence d'alerte.
+  }
 
-  // 4. Calcul du montant dépassé
+  // 3. CALCUL DU MONTANT CRITIQUE DÉPASSÉ
+  // Si le code atteint cette étape, c'est que le budget est officiellement dépassé.
   const exceededAmount = spent - budget.limit_amount;
 
-  // 5. Vérifier si une alerte existe déjà pour cette catégorie
+  // 4. VÉRIFICATION DE L'EXISTENCE D'UNE ALERTE PRÉCÉDENTE
+  // On cherche si une alerte existe déjà pour éviter de polluer l'interface avec des doublons.
   const existingAlert = await prisma.alert.findFirst({
     where: {
       userId,
@@ -58,20 +60,24 @@ export const generateBudgetAlert = async (budgetId: number, userId: number) => {
     },
   });
 
+  // -------------------------------------------------------------------------
+  // CORRECTION BUG 2 : MISE À JOUR DYNAMIQUE DES MONTANTS (UPSERT LOGIC)
+  // -------------------------------------------------------------------------
+  // Si une alerte existe déjà, peu importe son état (lue ou non-lue), il faut impérativement
+  // actualiser le montant dépassé qui a changé, et la repasser en non-lue (isRead: false)
+  // pour que le composant de notification du frontend clignote à nouveau.
   if (existingAlert) {
-    // L'alerte a déjà été lue → on la remet en non-lue avec le montant à jour
-    // pour que l'utilisateur soit re-notifié du nouveau dépassement
-    if (existingAlert.isRead) {
-      return await prisma.alert.update({
-        where: { id: existingAlert.id },
-        data: { isRead: false, exceededAmount },
-      });
-    }
-    // Alerte déjà non-lue → pas de doublon
-    return existingAlert;
+    return await prisma.alert.update({
+      where: { id: existingAlert.id },
+      data: { 
+        isRead: false,       // Force la réapparition de la notification sur le dashboard
+        exceededAmount       // Sauvegarde le nouveau montant exact du dépassement recalculé
+      },
+    });
   }
 
-  // 6. Créer une nouvelle alerte
+  // 5. CRÉATION INITIALE DE L'ALERTE
+  // Si aucune alerte n'existait au préalable pour cette catégorie, on la crée de zéro.
   const alert = await prisma.alert.create({
     data: {
       userId,
@@ -80,6 +86,6 @@ export const generateBudgetAlert = async (budgetId: number, userId: number) => {
     },
   });
 
-  // 7. Retourner l’alerte créée
+  // 6. RETOUR DE L'ENTITÉ CRÉÉE
   return alert;
 };

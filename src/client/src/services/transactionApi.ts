@@ -57,6 +57,7 @@ export async function createTransaction(
   return transaction;
 }
 
+// DELETE transactions - supprimer une transaction
 export async function deleteTransactionApi(id: number) {
   const res = await fetch(
     `${import.meta.env.VITE_API_BASE_URL}/transactions/${id}`,
@@ -66,11 +67,15 @@ export async function deleteTransactionApi(id: number) {
     },
   );
   if (!res.ok) throw new Error("Delete failed");
+
+  // Déclencher l'événement pour notifier le système d'alertes du recalcul
+  window.dispatchEvent(new CustomEvent("transaction:created"));
 }
 
+// PATCH/PUT transactions - modifier une transaction
 export async function updateTransactionApi(t: Transaction) {
   const payload = {
-    amount: t.amount,
+    amount: Number(t.amount), // Assurer le type Number
     description: t.description,
     date: t.date,
     categoryId: t.category.id,
@@ -90,5 +95,10 @@ export async function updateTransactionApi(t: Transaction) {
     throw new Error("Erreur API");
   }
 
-  return await res.json();
+  const updatedTransaction = await res.json();
+
+  // Déclencher l'événement pour mettre à jour le montant de l'alerte en temps réel
+  window.dispatchEvent(new CustomEvent("transaction:created"));
+
+  return updatedTransaction;
 }

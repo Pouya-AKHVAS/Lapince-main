@@ -12,9 +12,15 @@ export function useAlerts() {
     try {
       const data = await fetchAlerts();
       const unread = data.filter((a) => !a.isRead);
+      
       if (unread.length > 0) {
         setAlerts(unread);
         setCurrentAlertIndex(0);
+      } else {
+        // CORRECTION : Si le budget est assaini (retour au vert), 
+        // on réinitialise les états pour faire disparaître l'alerte du DOM immédiatement.
+        setAlerts([]);
+        setCurrentAlertIndex(null);
       }
     } catch {
       // les alertes sont non-critiques, on ne bloque pas le chargement
