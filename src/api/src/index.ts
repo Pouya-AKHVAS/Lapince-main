@@ -1,4 +1,5 @@
 import express from "express";
+import type { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
@@ -10,6 +11,8 @@ import transactionRouter from "../routes/transaction.routes.js";
 import budgetRoutes from "../routes/budget.routes.js";
 import alertRoutes from "../routes/alert.routes.js";
 import statsRoutes from "../routes/stats.routes.js";
+import { errorMiddleware } from "../middlewares/error.middleware.js";
+
 
 // Créer une app Express
 const app = express();
@@ -41,6 +44,19 @@ app.use("/transactions", transactionRouter);
 app.use("/budgets", budgetRoutes);
 app.use("/alerts", alertRoutes);
 app.use("/stats", statsRoutes);
+
+// Ce middleware intercepte toutes les routes backend non définies.
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+res.status(404).json({
+success: false,
+status: 404,
+
+message: `La route ${req.method} ${req.url} n'existe pas.`
+});
+});
+
+app.use(errorMiddleware);
 
 app.get("/", (req, res) => {
   res.json("Hello");

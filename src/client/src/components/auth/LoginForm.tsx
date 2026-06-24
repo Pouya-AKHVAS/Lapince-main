@@ -2,10 +2,18 @@ import { useState, type FormEvent } from "react";
 import type { LoginCredentials } from "../../services/authApi";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
+/**
+ * Interface pour typer l'objet d'erreur provenant du backend
+ */
+interface ApiError {
+  message: string;
+  field?: "email" | "password"; // Permet d'identifier précisément le champ en erreur
+}
+
 interface LoginFormProps {
-  onSubmit: (credentials: LoginCredentials) => void; // La fonction à appeler quand le formulaire est soumis, avec les données du formulaire
+  onSubmit: (credentials: LoginCredentials) => void; // La fonction à appeler quand le formulaire est soumis
   isLoading: boolean;
-  error: string | null;
+  error: ApiError | string | null; // Accepte désormais l'objet d'erreur structuré
 }
 
 export default function LoginForm({
@@ -16,6 +24,10 @@ export default function LoginForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Normalisation de l'erreur pour extraire le message global et le champ spécifique
+  const errorMessage = typeof error === "string" ? error : error?.message || null;
+  const errorField = typeof error === "object" ? error?.field : undefined;
 
   /**
    * Utilisation de FormEvent avec le type générique HTMLFormElement
@@ -29,13 +41,14 @@ export default function LoginForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Affichage de l'erreur globale renvoyée par le parent */}
-      {error && (
+      {/* Affichage de l'erreur globale renvoyée par le parent si aucun champ spécifique n'est ciblé */}
+      {errorMessage && !errorField && (
         <p className="text-red-600 text-[11px] text-center font-bold italic bg-red-100/50 py-1 rounded-full">
-          {error}
+          {errorMessage}
         </p>
       )}
 
+      {/* Champ E-mail */}
       <div>
         <label
           htmlFor="email"
@@ -50,11 +63,20 @@ export default function LoginForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="e-mail"
-          className="w-full px-4 py-2.5 rounded-full bg-white/80 border-none text-[13px] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-[#002b49]"
+          className={`w-full px-4 py-2.5 rounded-full bg-white/80 border text-[13px] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-[#002b49] transition-all ${
+            errorField === "email" ? "border-red-500 ring-1 ring-red-500 bg-red-50/50" : "border-transparent"
+          }`}
           disabled={isLoading}
         />
+        {/* Affichage ciblé de l'erreur sous le champ e-mail */}
+        {errorField === "email" && (
+          <p className="text-red-600 text-[11px] font-bold italic ml-4 mt-1">
+            {errorMessage}
+          </p>
+        )}
       </div>
 
+      {/* Champ Mot de passe */}
       <div>
         <label
           htmlFor="password"
@@ -70,18 +92,28 @@ export default function LoginForm({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="mot de passe"
-            className="w-full px-4 py-2.5 rounded-full bg-white/80 border-none text-[13px] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-[#002b49]"
+            className={`w-full px-4 py-2.5 rounded-full bg-white/80 border text-[13px] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-[#002b49] transition-all ${
+              errorField === "password" ? "border-red-500 ring-1 ring-red-500 bg-red-50/50" : "border-transparent"
+            }`}
             disabled={isLoading}
           />
           <button
             type="button"
             onClick={() => setShowPassword(prev => !prev)}
+            className="text-[#002b49] hover:opacity-70 transition-opacity"
           >
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
+        {/* Affichage ciblé de l'erreur sous le champ mot de passe */}
+        {errorField === "password" && (
+          <p className="text-red-600 text-[11px] font-bold italic ml-4 mt-1">
+            {errorMessage}
+          </p>
+        )}
       </div>
 
+      {/* Bouton de soumission */}
       <div className="flex justify-center pt-2">
         <button
           type="submit"

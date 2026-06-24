@@ -8,6 +8,7 @@ import PrivateRoute from "../components/PrivateRoute";
 import PrivateLayout from "../components/Layout/PrivateLayout";
 import MentionsLegalesPage from "../pages/MentionsLegales/MentionsLegalesPage";
 import DashboardPage from "../pages/Dashboard/DashboardPage";
+import NotFound from "../components/NotFound";
 
 export const router = createBrowserRouter([
   // --- ROUTES PUBLIQUES ---
@@ -51,5 +52,10 @@ export const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  // --- GESTION DES ERREURS 404 (En dernier) ---
+  {
+    path: "*", // Cela signifie toute adresse qui ne figurait pas sur la liste ci-dessus.
+    element: <NotFound />,
   },
 ]);

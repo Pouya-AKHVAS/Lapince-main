@@ -1,124 +1,97 @@
-import type { Request, Response } from "express";
-import argon2 from "argon2";
+import type { Request, Response, NextFunction } from "express";
 import { config } from "../config.ts";
 import type { Token, User } from "../models/index.ts";
 import { prisma } from "../lib/prisma.js";
-import {
-  BadRequestError,
-  ConflictError,
-  UnauthorizedError,
-} from "../lib/error.ts"
+import { BadRequestError, UnauthorizedError } from "../lib/error.ts";
 import { generateAuthTokens } from "../lib/tokens.ts";
 import { registerSchema, loginSchema } from "../validators/auth.validator.js"; // import de registerSchema ZOD
+import { authService } from "../services/auth.service.ts"; // Importation de la couche service
 
 // Contrôleur appelé par POST /auth/register
-// Il reçoit les données du formulaire d'inscription et crée un nouvel utilisateur en base
-export async function register(req: Request, res: Response) {
+// Il reçoit les données du formulaire d'inscription et délègue à authService
+export async function register(req: Request, res: Response, next: NextFunction) {
+  try {
+    // On valide le body avec le schéma Zod
+    // safeParse ne lève pas d'erreur, il retourne { success, data } ou { success, error }
+    const result = registerSchema.safeParse(req.body);
 
-  // On valide le body avec le schéma Zod
-  // safeParse ne lève pas d'erreur, il retourne { success, data } ou { success, error }
-  const result = registerSchema.safeParse(req.body);
+    if (!result.success) {
+      // On récupère le premier problème de validation (ex: mot de passe trop court)
+      // et on renvoie un message lisible au front avec le nom du champ concerné
+      const firstIssue = result.error.issues[0];
+      res.status(400).json({
+        message: firstIssue?.message ?? "Données invalides",
+        field: firstIssue?.path[0] as string | undefined,
+      });
+      return;
+    }
 
-  if (!result.success) {
-    // On récupère le premier problème de validation (ex: mot de passe trop court)
-    // et on renvoie un message lisible au front avec le nom du champ concerné
-    const firstIssue = result.error.issues[0];
-    res.status(400).json({
-      message: firstIssue?.message ?? "Données invalides",
-      field: firstIssue?.path[0] as string | undefined,
-    });
-    return;
+    // Si la validation passe, on extrait les champs depuis result.data (typé et sûr)
+    const { first_name, last_name, email, password, photo } = result.data;
+
+    // --- APPEL DE LA COUCHE SERVICE ---
+    // On délègue la vérification d'email, le hachage et la création en BDD au service dédié
+    const user = await authService.registerUser({ first_name, last_name, email, passwordPlain: password, photo });
+
+    // Générer les tokens et poser les cookies comme pour le login
+    const { accessToken, refreshToken } = generateAuthTokens(user as unknown as User);
+    await replaceRefreshTokenInDatabase(refreshToken, user as unknown as User);
+    setAccessTokenCookie(res, accessToken);
+    setRefreshTokenCookie(res, refreshToken);
+    setSessionIndicatorCookie(res, accessToken);
+
+    res.status(201).json({ message: "Inscription réussie", user });
+  } catch (error: any) {
+    // Gestion spécifique pour renvoyer le nom du champ au format attendu par le front
+    if (error.statusCode === 409) {
+      res.status(409).json({ message: error.message, field: error.field });
+      return;
+    }
+    next(error); // Passe l'erreur au Global Error Handler
   }
-
-  // Si la validation passe, on extrait les champs depuis result.data (typé et sûr)
-  const { first_name, last_name, email, password, photo } = result.data;
-
-  // On vérifie que l'email n'est pas déjà utilisé dans la base
-  // findUnique retourne null si aucun utilisateur n'a cet email
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    res.status(409).json({ message: "Cet email est déjà utilisé", field: "email" });
-    return;
-  }
-
-  // On ne stocke jamais un mot de passe en clair
-  // argon2 est un algorithme de hachage sécurisé, conçu pour être lent et résistant aux attaques
-  const hashedPassword = await argon2.hash(password);
-
-  // On crée l'utilisateur en base via Prisma
-  // Le champ select permet de choisir exactement ce qu'on retourne — le hash du mot de passe est volontairement exclu
-  const user = await prisma.user.create({
-    data: { first_name, last_name, email, password: hashedPassword, photo: photo ?? null },
-    select: {
-      id: true,
-      first_name: true,
-      last_name: true,
-      email: true,
-      photo: true,
-      createdAt: true,
-    },
-  });
-
-  // Générer les tokens et poser les cookies comme pour le login
-  const { accessToken, refreshToken } = generateAuthTokens(user as unknown as User);
-  await replaceRefreshTokenInDatabase(refreshToken, user as unknown as User);
-  setAccessTokenCookie(res, accessToken);
-  setRefreshTokenCookie(res, refreshToken);
-  setSessionIndicatorCookie(res, accessToken);
-
-  res.status(201).json({ message: "Inscription réussie", user });
 }
 
-export async function login(req: Request, res: Response) {
-  // On lance la validation du body de la requete avec le schéma Zod (safeParseAsync ne plante pas en cas d'erreur)
-  const result = await loginSchema.safeParseAsync(req.body);
-  // Bouncer : si la validation échoue, on renvoie une 400 avec un message d'erreur clair (ex: mot de passe trop court) et le champ concerné
-  if (!result.success) {
-    const firstIssue = result.error.issues[0];
-    res.status(400).json({
-      message: firstIssue?.message ?? "Données invalides",
-      field: firstIssue?.path[0] as string | undefined,
+// Contrôleur appelé par POST /auth/login
+export async function login(req: Request, res: Response, next: NextFunction) {
+  try {
+    // On lance la validation du body de la requete avec le schéma Zod (safeParseAsync ne plante pas en cas d'erreur)
+    const result = await loginSchema.safeParseAsync(req.body);
+    // Bouncer : si la validation échoue, on renvoie une 400 avec un message d'erreur clair (ex: mot de passe trop court) et le champ concerné
+    if (!result.success) {
+      const firstIssue = result.error.issues[0];
+      res.status(400).json({
+        message: firstIssue?.message ?? "Données invalides",
+        field: firstIssue?.path[0] as string | undefined,
+      });
+      return;
+    }
+    
+    // Si le bouncer a laissé passer la requete, on valide le payload (nature des valeurs)
+    const { email, password } = result.data;
+
+    // --- APPEL DE LA COUCHE SERVICE ---
+    // La vérification de l'utilisateur et du mot de passe Argon2 est déléguée au service
+    const user = await authService.verifyLogin(email, password);
+
+    // Générer les 2 tokens (access/refresh)
+    const { accessToken, refreshToken } = generateAuthTokens(user);
+
+    // Stocker le refresh token en BDD
+    await replaceRefreshTokenInDatabase(refreshToken, user);
+
+    setAccessTokenCookie(res, accessToken);
+    setRefreshTokenCookie(res, refreshToken);
+    setSessionIndicatorCookie(res, accessToken);
+
+    // Renvoyer les token vers l'utilisateur
+    res.json({
+      accessToken,
+      refreshToken,
     });
-    return;
+  } catch (error) {
+    next(error); // Passe l'erreur au Global Error Handler
   }
-  
-  // Si le bouncer a laissé passer la requete, on valide le payload (nature des valeurs)
-  const { email, password } = result.data;
-
-
-
-  // Récupérer l'utilisateur dans la BDD
-  const user = await prisma.user.findFirst({ where: { email } });
-  if (!user) {
-    throw new UnauthorizedError(
-      "Le login et le mot de passe ne correspondent pas",
-    );
-  }
-  // Vérifier que le mot de passe et le hash correspondent
-  const isMatching = await argon2.verify(user.password, password);
-  if (!isMatching) {
-    throw new UnauthorizedError(
-      "Le login et le mot de passe ne correspondent pas",
-    );
-  }
-
-  // Générer les 2 tokens (access/refresh)
-  const { accessToken, refreshToken } = generateAuthTokens(user);
-
-  // Stocker le refresh token en BDD
-await replaceRefreshTokenInDatabase(refreshToken, user);
-
-setAccessTokenCookie(res, accessToken);
-setRefreshTokenCookie(res, refreshToken);
-setSessionIndicatorCookie(res, accessToken);
-
-// Renvoyer les token vers l'utilisateur
-res.json({
-  accessToken,
-  refreshToken,
-});
 }
-
 
 async function replaceRefreshTokenInDatabase(refreshToken: Token, user: User) {
   await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
@@ -168,47 +141,54 @@ function setRefreshTokenCookie(res: Response, refreshToken: Token) {
   });
 }
 
-export async function refresh(req: Request, res: Response) {
-  // Vérification d'abord dans les cookies, sinon dans le body (au cas où le client ne gère pas les cookies, en dev par exemple)
-  const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+export async function refresh(req: Request, res: Response, next: NextFunction) {
+  try {
+    // Vérification d'abord dans les cookies, sinon dans le body (au cas où le client ne gère pas les cookies, en dev par exemple)
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
-  if (!refreshToken) {
-    throw new BadRequestError("Refresh token manquant");
+    if (!refreshToken) {
+      throw new BadRequestError("Refresh token manquant");
+    }
+
+    //Vérifier que le refresh token existe en BDD et n'est pas expiré
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+      include: { user: true },
+    });
+
+    if (!storedToken || storedToken.expiresAt < new Date()) {
+      throw new UnauthorizedError("Refresh token invalide ou expiré");
+    }
+
+    const user = storedToken.user;
+
+    //Générer de nouveaux tokens
+    const newTokens = generateAuthTokens(user as unknown as User);
+
+    //Mettre à jour le refresh token en BDD (ancien token supprimé, nouveau token créé)
+    await replaceRefreshTokenInDatabase(newTokens.refreshToken, user as unknown as User);
+
+    //Mettre à jour les cookies
+    setAccessTokenCookie(res, newTokens.accessToken);
+    setRefreshTokenCookie(res, newTokens.refreshToken);
+    setSessionIndicatorCookie(res, newTokens.accessToken);
+
+    res.json({ accessToken: newTokens.accessToken.token });
+  } catch (error) {
+    next(error);
   }
-
-  //Vérifier que le refresh token existe en BDD et n'est pas expiré
-  const storedToken = await prisma.refreshToken.findUnique({
-    where: { token: refreshToken },
-    include: { user: true },
-  });
-
-  if (!storedToken || storedToken.expiresAt < new Date()) {
-    throw new UnauthorizedError("Refresh token invalide ou expiré");
-  }
-
-  const user = storedToken.user;
-
-  //Générer de nouveaux tokens
-  const newTokens = generateAuthTokens(user);
-
-  //Mettre à jour le refresh token en BDD (ancien token supprimé, nouveau token créé)
-  await replaceRefreshTokenInDatabase(newTokens.refreshToken, user);
-
-  //Mettre à jour les cookies
-  setAccessTokenCookie(res, newTokens.accessToken);
-  setRefreshTokenCookie(res, newTokens.refreshToken);
-  setSessionIndicatorCookie(res, newTokens.accessToken);
-
-  res.json({ accessToken: newTokens.accessToken.token });
 }
 
-
-export async function logoutUser(req: Request, res: Response) {
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken", { path: config.isProd ? "/api/auth/refresh" : "/auth/refresh" });
-  res.clearCookie("sessionExists");
-  if (req.user) {
-    await prisma.refreshToken.deleteMany({ where: { userId: req.user.id } });
+export async function logoutUser(req: Request, res: Response, next: NextFunction) {
+  try {
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken", { path: config.isProd ? "/api/auth/refresh" : "/auth/refresh" });
+    res.clearCookie("sessionExists");
+    if (req.user) {
+      await prisma.refreshToken.deleteMany({ where: { userId: req.user.id } });
+    }
+    res.status(204).end();
+  } catch (error) {
+    next(error);
   }
-  res.status(204).end();
-  }
+}
