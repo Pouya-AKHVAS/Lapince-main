@@ -1,5 +1,7 @@
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { StatsCards } from "./StatsCards";
+import "@testing-library/jest-dom";
 
 describe("StatsCards", () => {
   it("affiche les trois cartes avec les bons titres", () => {
