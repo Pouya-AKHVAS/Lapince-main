@@ -34,6 +34,14 @@ services:
       JWT_SECRET: ${JWT_SECRET}       # Clé secrète pour signer les tokens JWT
       CORS_ORIGIN: ${CORS_ORIGIN}     # Origine autorisée pour les requêtes CORS
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS} # Liste des origines autorisées pour les requêtes CORS (séparées par des virgules)
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:3007}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      #  Nouvelles lignes pour transmettre les variables d'e-mail au conteneur backend :
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      EMAIL_FROM: ${EMAIL_FROM}
     ports:
       - "${API_LOCAL_PORT}:${API_PORT}"  # Mappe le port local vers le port interne de l'API
     depends_on:
@@ -51,6 +59,9 @@ services:
         - action: sync
           path: ./src/api/controllers
           target: /app/controllers
+        - action: sync
+          path: ./src/api/services
+          target: /app/services
         - action: sync
           path: ./src/api/lib
           target: /app/lib

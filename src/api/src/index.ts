@@ -44,9 +44,11 @@ app.use("/transactions", transactionRouter);
 app.use("/budgets", budgetRoutes);
 app.use("/alerts", alertRoutes);
 app.use("/stats", statsRoutes);
+app.get("/", (req, res) => {
+  res.json("Hello");
+});
 
 // Ce middleware intercepte toutes les routes backend non définies.
-
 app.use((req: Request, res: Response, next: NextFunction) => {
 res.status(404).json({
 success: false,
@@ -58,9 +60,7 @@ message: `La route ${req.method} ${req.url} n'existe pas.`
 
 app.use(errorMiddleware);
 
-app.get("/", (req, res) => {
-  res.json("Hello");
-});
+
 
 export default app;
 
