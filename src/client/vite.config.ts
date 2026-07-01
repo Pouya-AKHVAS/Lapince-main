@@ -13,15 +13,23 @@ export default defineConfig({
     setupFiles: "./src/test-setup.ts",
   },
   server: {
-    host: true,  // Écoute sur 0.0.0.0 — indispensable pour être accessible depuis l'hôte via Docker
+    host: true,  // Écoute sur 0.0.0.0
+    port: 8080,
+    
+  
+    allowedHosts: [
+      'lapince.pooya-dev.com',
+      'api.lapince.pooya-dev.com'
+    ],
+    
     watch: {
-      usePolling: true,  // Nécessaire sur Windows : Docker ne propage pas les événements inotify natifs
+      usePolling: true,  // Nécessaire sur Windows
     },
     proxy: {
       '/api': {
-        target: 'http://api:3007', // 'api' est le nom du service dans docker-compose, pas besoin de localhost ou d'IP
-        changeOrigin: true, // Modifie l'en-tête Host de la requête pour correspondre à la cible, ce qui est souvent nécessaire pour les API qui vérifient l'origine des requêtes
-        rewrite: (path) => path.replace(/^\/api/, ''),  // Supprime le préfixe /api avant de faire suivre la requête au back-end, car le serveur Express n'a pas de route /api, il a juste /auth, /users, etc.
+        target: 'http://api:3007', 
+        changeOrigin: true, 
+        rewrite: (path) => path.replace(/^\/api/, ''),  
       },
     },
   },
