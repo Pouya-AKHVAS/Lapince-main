@@ -24,6 +24,7 @@ describe("POST /auth/register", () => {
         last_name:  "User",
         email:      testEmail,
         password:   "Motdepasse1@",
+        confirmPassword: "Motdepasse1@",
       });
 
     expect(res.status).toBe(201);
@@ -39,6 +40,7 @@ describe("POST /auth/register", () => {
         last_name:  "User",
         email:      testEmail,
         password:   "Motdepasse1@",
+        confirmPassword: "Motdepasse1@",
       });
 
     expect(res.status).toBe(409);
@@ -52,6 +54,7 @@ describe("POST /auth/register", () => {
         last_name:  "User",
         email:      "autre@lapince.fr",
         password:   "trop_court",
+        confirmPassword: "trop_court",
       });
 
     expect(res.status).toBe(400);

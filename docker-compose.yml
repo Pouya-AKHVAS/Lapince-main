@@ -99,21 +99,21 @@ services:
         - action: rebuild
           path: ./src/client/package.json
 
-  # --- Prisma Studio (interface visuelle de la base de données) ---
+  # --- Prisma Studio ---
   studio:
-    image: node:22-slim        # Même version Node que l'API
-    working_dir: /app/src/api  # Se place dans le dossier de l'API pour accéder au schéma Prisma
+    image: node:22  # Utilisez la version complète pour avoir openssl
+    working_dir: /app/src/api
     volumes:
-      - .:/app  # Monte tout le projet pour accéder à node_modules et schema.prisma
+      - .:/app
     environment:
-      DATABASE_URL: ${DATABASE_URL}  # Connexion à la même base que l'API
+      DATABASE_URL: ${DATABASE_URL}
     ports:
-      - "5555:5555"  # Interface Prisma Studio accessible sur http://localhost:5555
-    command: sh -c "apt-get update -y && apt-get install -y openssl && npm --prefix /app/src/api install && npx --yes prisma studio --port 5555 --browser none"
+      - "5555:5555"
+    command: ["sh", "-c", "npx prisma studio --port 5555 --browser none"]
     tty: true
     depends_on:
       db:
-        condition: service_healthy  # Attend que Postgres soit prêt avant de se connecter
+        condition: service_healthy
 
 # --- Volumes nommés ---
 volumes:

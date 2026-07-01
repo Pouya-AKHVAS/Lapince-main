@@ -3,46 +3,54 @@ import { useState } from "react";
 import { cn } from "../../lib/utils";
 import type { RegisterFormData, ApiError } from "../../types/auth";
 
-/**
- * Interface décrivant les propriétés attendues par le composant RegisterForm.
- */
 interface RegisterFormProps {
-  /** Fonction appelée lors de la soumission du formulaire */
   onSubmit: (data: RegisterFormData) => void;
-
-  /** Indique si une requête API est en cours */
   isLoading: boolean;
-
-  /** Contient l'erreur retournée par l'API (champ + message) */
   error: ApiError | null;
 }
 
 export default function RegisterForm({
   onSubmit,
   isLoading,
-  error,
+  error: apiError,
 }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  /**
-   * Gère la soumission du formulaire et extrait les valeurs des champs.
-   */
+  
+// Pour gérer les erreurs de mot de passe incorrect côté client
+
+  const [localError, setLocalError] = useState<ApiError | null>(null);
   function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setLocalError(null); // Réinitialiser l'erreur locale avant chaque vérification
 
     const form = event.currentTarget;
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+    const confirmPassword = (form.elements.namedItem("confirm") as HTMLInputElement).value;
 
-    const data: RegisterFormData = {
-      first_name: (form.elements.namedItem("first_name") as HTMLInputElement)
-        .value,
-      last_name: (form.elements.namedItem("last_name") as HTMLInputElement)
-        .value,
+    // Vérifier la concordance des deux mots de passe dans l'interface utilisateur avant de valider et d'envoyer l'e-mail
+    if (password !== confirmPassword) {
+      setLocalError({
+        field: "confirm",
+        message: "Les mots de passe ne correspondent pas",
+      });
+      return; // Mettre en pause l'opération d'envoi du formulaire
+    }
+
+    // // Créer des données d'inscription et ajouter un champ confirmPassword pour la couche de validation côté serveur (Zod)
+    const data: RegisterFormData & { confirmPassword?: string } = {
+      first_name: (form.elements.namedItem("first_name") as HTMLInputElement).value,
+      last_name: (form.elements.namedItem("last_name") as HTMLInputElement).value,
       email: (form.elements.namedItem("email") as HTMLInputElement).value,
-      password: (form.elements.namedItem("password") as HTMLInputElement).value,
+      password: password,
+      confirmPassword: confirmPassword,
     };
 
-    onSubmit(data);
+    onSubmit(data as any);
   }
+
+  // Combinaison et priorisation des erreurs (si une erreur locale existe, l'afficher ; sinon, afficher l'erreur du serveur)
+  const error = localError || apiError;
 
   return (
     <form
@@ -111,16 +119,16 @@ export default function RegisterForm({
               required
             />
 
-            {/* On va afficher le bouton que pour les champs password et confirm*/}
-            {/* Pour inverser les états : on passe de true à false ou inversement pour afficher ou masquer */}
+            {/* Affichage du bouton de visibilité uniquement pour password et confirm */}
             {(field.id === "password" || field.id === "confirm") && (
               <button
                 type="button"
                 onClick={() =>
                   field.id === "password"
-                    ? setShowPassword(prev => !prev)
-                    : setShowConfirm(prev => !prev)
+                    ? setShowPassword((prev) => !prev)
+                    : setShowConfirm((prev) => !prev)
                 }
+                className="p-1 hover:bg-black/5 rounded-full transition-colors"
               >
                 {field.id === "password" ? (
                   showPassword ? (
@@ -149,6 +157,7 @@ export default function RegisterForm({
           )}
         </div>
       ))}
+
       {/* Bouton de validation */}
       <div className="flex justify-center">
         <button

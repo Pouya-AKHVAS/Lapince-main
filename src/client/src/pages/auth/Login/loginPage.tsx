@@ -27,26 +27,40 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
     try {
-      await loginUser(credentials);
-      const user = await fetchCurrentUser();
-      setSuccessMessage("Connexion réussie !");
-      setTimeout(() => {
-        login(user);
-        navigate("/accueil");
-      }, 2000);
-    } catch {
-      const newCount = attemptCount + 1;
-      setAttemptCount(newCount);
-      if (newCount >= 3) {
-        setIsBlocked(true);
-        setError("Trop de tentatives, veuillez réessayer plus tard.");
-      } else {
-        setError(`Mot de passe incorrect, ${3 - newCount} tentative(s) restante(s).`);
-      }
-    } finally {
-      setIsLoading(false);
+    await loginUser(credentials);
+    const user = await fetchCurrentUser();
+    setSuccessMessage("Connexion réussie !");
+    setTimeout(() => {
+      login(user);
+      navigate("/accueil");
+    }, 2000);
+  } catch (err: any) {
+    // Si le compte n'est pas activé (statut 403)
+    if (err.status === 403) {
+      setError({
+        message: err.data?.message || "Veuillez activer votre compte.",
+        field: "email"
+      } as any); // Envoyer la structure afin qu'elle puisse être transmise au formulaire
+      return; // sans augmenter la limite, on sort
     }
-  };
+
+    // pour les autres erreurs (comme le mot de passe incorrect 401 ou 400) le compteur fonctionne
+    const newCount = attemptCount + 1;
+    setAttemptCount(newCount);
+    
+    if (newCount >= 3) {
+      setIsBlocked(true);
+      setError("Trop de tentatives, veuillez réessayer plus tard.");
+    } else {
+      setError({
+        message: `Mot de passe incorrect, ${3 - newCount} tentative(s) restante(s).`,
+        field: "password"
+      } as any);
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <main

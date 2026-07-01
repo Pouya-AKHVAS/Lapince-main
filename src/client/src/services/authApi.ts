@@ -53,10 +53,21 @@ export async function registerUser(formData: RegisterFormData): Promise<AuthUser
       credentials: "include",
     });
     if (!response.ok) {
-      throw new Error("Email ou mot de passe incorrect.");
+    // Extraire les données d'erreur du serveur (telles que les champs personnalisés et les messages)
+    const contentType = response.headers.get("content-type");
+    if (contentType?.includes("application/json")) {
+      const errorData = await response.json();
+      
+    // Créer un objet d'erreur personnalisé possédant un statut et des données
+      const customError = new Error(errorData.message || "Erreur de connexion") as any;
+      customError.status = response.status;
+      customError.data = errorData;
+      throw customError;
     }
-    return response.json();
+    throw new Error("Email ou mot de passe incorrect.");
   }
+  return response.json();
+}
 
   export async function fetchCurrentUser(): Promise<AuthUser> {
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/me`, {
