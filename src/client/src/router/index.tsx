@@ -9,6 +9,7 @@ import PrivateLayout from "../components/Layout/PrivateLayout";
 import MentionsLegalesPage from "../pages/MentionsLegales/MentionsLegalesPage";
 import DashboardPage from "../pages/Dashboard/DashboardPage";
 import NotFound from "../components/NotFound";
+import VerifyEmailPage from "../pages/auth/VerifyEmailPage";
 
 export const router = createBrowserRouter([
   // --- ROUTES PUBLIQUES ---
@@ -27,6 +28,11 @@ export const router = createBrowserRouter([
   {
     path: "/mentions-legales",
     element: <MentionsLegalesPage />,
+  },
+
+  {
+    path: "/auth/verify/:token",
+    element: <VerifyEmailPage />,
   },
 
   // --- ROUTES PRIVÉES ---

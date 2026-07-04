@@ -1,12 +1,10 @@
 import nodemailer from "nodemailer";
 import { config } from "../config.ts";
 
-export function buildVerificationUrl(token: string, apiBaseUrl = config.apiBaseUrl) {
-  const normalizedBaseUrl = apiBaseUrl.startsWith("http://") || apiBaseUrl.startsWith("https://")
-    ? apiBaseUrl
-    : `http://${apiBaseUrl}`;
-
-  return `${normalizedBaseUrl.replace(/\/$/, "")}/auth/verify/${token}`;
+export function buildVerificationUrl(token: string) {
+  const frontendUrl = "http://lapince.pooya-dev.com"; 
+  
+  return `${frontendUrl}/auth/verify/${token}`;
 }
 
 const transporter = nodemailer.createTransport({
