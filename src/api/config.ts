@@ -1,3 +1,11 @@
+import dotenv from "dotenv";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+dotenv.config({ path: join(__dirname, ".env"), override: true });
+
 if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is required");
 }
@@ -5,6 +13,8 @@ if (!process.env.JWT_SECRET) {
 if (!process.env.ALLOWED_ORIGINS) {
   throw new Error("ALLOWED_ORIGINS environment variable is required");
 }
+
+
 
 const port = process.env.API_PORT || process.env.PORT || "3007";
 const rawApiBaseUrl = process.env.API_BASE_URL || `http://localhost:${port}`;

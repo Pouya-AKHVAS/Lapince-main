@@ -1,7 +1,11 @@
+import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 
-
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, "..", ".env"), override: true });
 
 const adapter = new PrismaPg(process.env.DATABASE_URL!);
 

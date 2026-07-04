@@ -1,18 +1,22 @@
 import nodemailer from "nodemailer";
 import { config } from "../config.ts";
 
-export function buildVerificationUrl(token: string) {
-  const frontendUrl = "http://lapince.pooya-dev.com"; 
+export function buildVerificationUrl(token: string, apiBaseUrl?: string) {
+  const finalBaseUrl = apiBaseUrl || config.apiBaseUrl || "http://localhost:3007";
   
-  return `${frontendUrl}/auth/verify/${token}`;
+  const normalizedBaseUrl = finalBaseUrl.startsWith("http://") || finalBaseUrl.startsWith("https://")
+    ? finalBaseUrl
+    : `http://${finalBaseUrl}`;
+
+  return `${normalizedBaseUrl.replace(/\/$/, "")}/auth/verify/${token}`;
 }
 
 const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST, //  smtp-relay.brevo.com
-  port: parseInt(process.env.MAIL_PORT || "587"),
+  host: config.email.host || process.env.SMTP_HOST || process.env.MAIL_HOST,
+  port: config.email.port || parseInt(process.env.SMTP_PORT || process.env.MAIL_PORT || "587"),
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
+    user: config.email.user || process.env.SMTP_USER || process.env.MAIL_USER,
+    pass: config.email.pass || process.env.SMTP_PASSWORD || process.env.MAIL_PASS,
   },
 });
 
