@@ -49,5 +49,5 @@
   },
   
   
-  "exclude": ["node_modules", "generated", "prisma", "prisma.config.ts"]
+  "exclude": ["node_modules", "generated", "prisma", "prisma.config.ts", "**/*.test.ts", "**/*.spec.ts"]
 }
