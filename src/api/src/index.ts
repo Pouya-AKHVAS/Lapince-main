@@ -23,6 +23,7 @@ import { errorMiddleware } from "../middlewares/error.middleware.js";
 // Créer une app Express
 const app = express();
 const PORT = Number(process.env.PORT) || 3007;
+app.set('trust proxy', 1);
 
 // Sécuriser les headers HTTP
 app.use(helmet());
