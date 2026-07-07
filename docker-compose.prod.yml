@@ -10,6 +10,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}             # Nom de la base de données
     volumes:
       - postgres_data:/var/lib/postgresql/data  # Persiste les données entre les redémarrages
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
       # Vérifie que Postgres est prêt à accepter des connexions avant de démarrer les autres services
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -30,15 +32,21 @@ services:
       JWT_SECRET: ${JWT_SECRET}       # Clé secrète pour signer les tokens JWT
       CORS_ORIGIN: ${CORS_ORIGIN}     # Origine autorisée pour les requêtes CORS
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS} # Liste des origines autorisées pour les requêtes CORS (séparées par des virgules)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASS}
+      EMAIL_FROM: ${EMAIL_FROM}
     depends_on:
       db:
         condition: service_healthy  # Démarre l'API seulement quand Postgres est prêt
 
-  # --- Client React/Vite (frontend) ---
+
+   # --- Client React/Vite (frontend) ---
   client:
     build:
       context: ./src/client
-      dockerfile: client.Dockerfile     
+      dockerfile: client.Dockerfile
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}   # ← injecté au moment du build
     ports:
@@ -49,3 +57,4 @@ services:
 
 volumes:
   postgres_data:
+
