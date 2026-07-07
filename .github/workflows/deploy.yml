@@ -26,18 +26,14 @@ jobs:
           script: |
             cd /var/www/lapince
             
-            # Vérification si le dépôt Git est déjà initialisé sur le serveur
-            if [ ! -d ".git" ]; then
-              echo "Premier déploiement : Clonage du dépôt..."
-              git clone https://github.com/${{ github.repository }}.git .
-            else
-              echo "Mise à jour du code : Git pull en cours..."
-              git pull origin main
-            fi
+            # Effacement complet de l'état des portes pour éviter toute interférence
+            git fetch origin main
+            git reset --hard origin/main
             
-            # Relance des conteneurs Docker avec reconstruction des images (Build)
-            echo "Arrêt des conteneurs existants..."
-            docker compose down
+            # Utilisation du fichier prod pour rétrograder les conteneurs
+            # Utilisation de --remove-orphans pour supprimer les conteneurs supplémentaires comme lapince-studio-1
+            docker compose -f docker-compose.prod.yml --env-file .env down --remove-orphans
+            sleep 2
             
-            echo "Lancement du build et démarrage des services en arrière-plan..."
-            docker compose up -d --build
+            # Relance avec la nouvelle version
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --build
