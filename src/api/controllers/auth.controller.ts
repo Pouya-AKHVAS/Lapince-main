@@ -121,50 +121,51 @@ export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     // Bouncer Zod (safeParseAsync ne plante pas en cas d'erreur)
     const result = await loginSchema.safeParseAsync(req.body);
-    if (!result.success) { 
-      const firstIssue = result.error.issues[0]; 
-      res.status(400).json({ 
-        message: firstIssue?.message ?? "Données invalides", 
-        field: firstIssue?.path[0] as string | undefined, 
-      }); 
-      return; 
+    if (!result.success) {
+      const firstIssue = result.error.issues[0];
+      res.status(400).json({
+        message: firstIssue?.message ?? "Données invalides",
+        field: firstIssue?.path[0] as string | undefined,
+      });
+      return;
     }
 
-    const { email, password } = result.data; 
+    const { email, password } = result.data;
 
-//  Nouvelle étape : Nous récupérons d’abord l’utilisateur directement depuis la base de données pour vérifier son statut d’approbation.
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+    //  Nouvelle étape : Nous récupérons d’abord l’utilisateur directement depuis la base de données pour vérifier son statut d’approbation.
+    const existingUser = await prisma.user.findUnique({ where: { email } });
 
-// Si l'utilisateur existe mais n'a pas encore vérifié son adresse e-mail :
-   if (existingUser && !(existingUser as any).isVerified) {
-  res.status(403).json({
-    message: "Votre compte n'est pas encore activé. Veuillez valider votre adresse e-mail.",
-    field: "email",
-  });
-  return;
-}
+    // Si l'utilisateur existe mais n'a pas encore vérifié son adresse e-mail :
+    if (existingUser && !(existingUser as any).isVerified) {
+      res.status(403).json({
+        message:
+          "Votre compte n'est pas encore activé. Veuillez valider votre adresse e-mail.",
+        field: "email",
+      });
+      return;
+    }
 
     // --- APPEL DE LA COUCHE SERVICE ---
-    // Maintenant que nous sommes sûrs que l'utilisateur est authentifié, nous vérifions son mot de passe de connexion.    
+    // Maintenant que nous sommes sûrs que l'utilisateur est authentifié, nous vérifions son mot de passe de connexion.
     const user = await authService.verifyLogin(email, password);
 
-    // Si le compte est valide et activé, on génère les 2 tokens (access/refresh) 
-    const { accessToken, refreshToken } = generateAuthTokens(user); 
+    // Si le compte est valide et activé, on génère les 2 tokens (access/refresh)
+    const { accessToken, refreshToken } = generateAuthTokens(user);
 
-    // Stocker ou remplacer le refresh token en BDD 
-    await replaceRefreshTokenInDatabase(refreshToken, user); 
+    // Stocker ou remplacer le refresh token en BDD
+    await replaceRefreshTokenInDatabase(refreshToken, user);
 
-    // Déploiement des cookies HTTP-Only hautement sécurisés 
-    setAccessTokenCookie(res, accessToken); 
-    setRefreshTokenCookie(res, refreshToken); 
-    setSessionIndicatorCookie(res, accessToken); 
+    // Déploiement des cookies HTTP-Only hautement sécurisés
+    setAccessTokenCookie(res, accessToken);
+    setRefreshTokenCookie(res, refreshToken);
+    setSessionIndicatorCookie(res, accessToken);
 
-    res.json({ 
-      accessToken, 
-      refreshToken, 
-    }); 
+    res.json({
+      accessToken,
+      refreshToken,
+    });
   } catch (error) {
-    next(error); 
+    next(error);
   }
 }
 
@@ -201,7 +202,8 @@ export async function verifyEmail(
     });
 
     // 3. Redirection de l'utilisateur vers la page de login du Frontend avec un indicateur de succès
-    const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_BASE_URL || (config.isProd ? "https://lapince.fr" : "http://localhost:8080");
+    const frontendUrl =
+      process.env.FRONTEND_URL || "http://lapince.pooya-dev.com";
     res.redirect(`${frontendUrl.replace(/\/$/, "")}/login?verified=true`);
   } catch (error) {
     next(error);
