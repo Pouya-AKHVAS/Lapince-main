@@ -45,6 +45,7 @@ jobs:
         run: |
           npm install
           npx prisma generate
+          npx prisma db push
           npm test
         working-directory: ./src/api
         env:
