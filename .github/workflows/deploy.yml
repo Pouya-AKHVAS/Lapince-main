@@ -16,14 +16,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Étape 2 : Installation des dépendances pour exécuter les tests
-      - name: Install dependencies
+      # Étape 2 : Installation et Tests pour l'API (Back-end)
+      - name: Install dependencies (API)
         run: npm install
-
-      # Étape 3 : Exécution des tests unitaires et d'intégration
-      # Le pipeline s'arrête ici si les tests échouent, protégeant l'environnement de production
-      - name: Run Unit and Integration Tests
+        working-directory: ./src/api
+      - name: Run Tests (API)
         run: npm test
+        working-directory: ./src/api
+
+      # Étape 3 : Installation et Tests pour le Client (Front-end)
+      - name: Install dependencies (Client)
+        run: npm install
+        working-directory: ./src/client
+      - name: Run Tests (Client)
+        run: npm test
+        working-directory: ./src/client
 
       # Étape 4 : Connexion SSH au serveur et déploiement avec Docker Compose
       - name: Deploy via SSH
@@ -33,18 +40,18 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Accès au répertoire de l'application
+            # Accès au répertoire de l'application sur le serveur
             cd /var/www/lapince
             
             # Mise à jour du code source depuis le dépôt distant
             git fetch origin main
             git reset --hard origin/main
             
-            # Arrêt et suppression des anciens conteneurs pour repartir sur une base saine
-            # L'option --remove-orphans nettoie les conteneurs obsolètes
+            # Arrêt et suppression des conteneurs obsolètes pour repartir sur une base saine
+            # L'option --remove-orphans nettoie les services qui ne sont plus définis
             docker compose -f docker-compose.prod.yml --env-file .env down --remove-orphans
             sleep 2
             
             # Déploiement de la nouvelle version en mode détaché
-            # L'option --build force la reconstruction des images si nécessaire
+            # L'option --build force la reconstruction des images pour intégrer les modifications
             docker compose -f docker-compose.prod.yml --env-file .env up -d --build
