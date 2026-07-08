@@ -86,7 +86,7 @@ export default function LoginPage() {
         </div>
         <img
           src="/WEBP/Desktop/Lapince-Logo-Desktop.webp"
-          className="absolute top-10 left-15 w-24 lg:w-60 z-50 transition-all"
+          className="absolute top-10 left-15 w-24 lg:w-50 z-50 transition-all"
           alt="Logo"
         />
 
@@ -119,7 +119,7 @@ export default function LoginPage() {
         />
         <img
           src="/WEBP/Mobile/Lapince-Logo-Mobile.webp"
-          className="absolute top-6 left-6 w-28 z-50"
+          className="absolute top-6 left-6 w-20 z-50"
           alt="Logo Mobile"
         />
       </div>

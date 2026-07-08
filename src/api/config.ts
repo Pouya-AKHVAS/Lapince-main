@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 // 1. Chargement du fichier .env uniquement en environnement de développement
 if (process.env.NODE_ENV !== "production") {
   const __dirname = dirname(fileURLToPath(import.meta.url));
-  dotenv.config({ path: join(__dirname, "../.env"), override: true });
+  dotenv.config({ path: join(__dirname, ".env"), override: true });
 }
 
 // 2. Validation des variables d'environnement critiques
