@@ -11,16 +11,26 @@ jobs:
   test:
     name: Tests Unitaires & Intégration
     runs-on: ubuntu-latest
+    
+    # Définition d'un service de base de données temporaire pour les tests Prisma
+    services:
+      db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: LaPince
+          POSTGRES_PASSWORD: lapincepassword
+          POSTGRES_DB: Lapince
+        ports:
+          - 5454:5432 # Mappage du port pour que l'API puisse s'y connecter
+
     strategy:
       matrix:
         node-version: [24]
     
     steps:
-      # Récupération du code source
       - name: Checkout code
         uses: actions/checkout@v4
         
-      # Configuration de l'environnement Node.js avec mise en cache pour accélérer l'installation
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -30,15 +40,16 @@ jobs:
             src/api/package-lock.json
             src/client/package-lock.json
 
-      # Installation et exécution des tests pour l'API
+      # Installation, génération du client Prisma et exécution des tests API
       - name: Install & Test API
         run: |
           npm install
+          npx prisma generate
           npm test
         working-directory: ./src/api
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: postgresql://LaPince:lapincepassword@127.0.0.1:5454/Lapince
           NODE_ENV: test
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
           CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
@@ -68,7 +79,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script_stop: true # Arrête le pipeline en cas d'erreur sur le serveur
+          script_stop: true 
           script: |
             cd /var/www/lapince
             
@@ -77,8 +88,7 @@ jobs:
             git reset --hard origin/main
             
             # Redémarrage propre des conteneurs Docker
-            # L'option --remove-orphans supprime les anciens conteneurs inutilisés
             docker compose -f docker-compose.prod.yml --env-file .env down --remove-orphans
             
-            # Relance des services avec reconstruction des images si nécessaire
+            # Relance des services avec reconstruction des images
             docker compose -f docker-compose.prod.yml --env-file .env up -d --build
