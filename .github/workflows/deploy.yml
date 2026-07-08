@@ -1,10 +1,10 @@
 name: Deploy La Pince to Hetzner
 
-# Déclencheur : Exécute le workflow à chaque push sur la branche principale
+# Déclencheur : Exécute ce pipeline à chaque push sur la branche principale
 on:
   push:
     branches:
-      - main # Modifie par 'master' si c'est le nom de ta branche principale
+      - main
 
 jobs:
   deploy:
@@ -16,7 +16,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Étape 2 : Connexion SSH au serveur et déploiement avec Docker Compose
+      # Étape 2 : Installation des dépendances pour exécuter les tests
+      - name: Install dependencies
+        run: npm install
+
+      # Étape 3 : Exécution des tests unitaires et d'intégration
+      # Le pipeline s'arrête ici si les tests échouent, protégeant l'environnement de production
+      - name: Run Unit and Integration Tests
+        run: npm test
+
+      # Étape 4 : Connexion SSH au serveur et déploiement avec Docker Compose
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -24,16 +33,18 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # Accès au répertoire de l'application
             cd /var/www/lapince
             
-            # Effacement complet de l'état des portes pour éviter toute interférence
+            # Mise à jour du code source depuis le dépôt distant
             git fetch origin main
             git reset --hard origin/main
             
-            # Utilisation du fichier prod pour rétrograder les conteneurs
-            # Utilisation de --remove-orphans pour supprimer les conteneurs supplémentaires comme lapince-studio-1
+            # Arrêt et suppression des anciens conteneurs pour repartir sur une base saine
+            # L'option --remove-orphans nettoie les conteneurs obsolètes
             docker compose -f docker-compose.prod.yml --env-file .env down --remove-orphans
             sleep 2
             
-            # Relance avec la nouvelle version
+            # Déploiement de la nouvelle version en mode détaché
+            # L'option --build force la reconstruction des images si nécessaire
             docker compose -f docker-compose.prod.yml --env-file .env up -d --build
