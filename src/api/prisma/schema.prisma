@@ -5,11 +5,13 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
 enum PeriodType {
   weekly
   monthly
   custom
 }
+
 enum CategoryType {
   EXPENSE
   INCOME
@@ -22,10 +24,10 @@ model User {
   email      String  @unique
   password   String
   photo      String?
-  
-// Nouveaux champs pour la confirmation de l'e-mail de sécurité
-  isVerified        Boolean  @default(false)
-  verificationToken String?  @unique
+
+  // Nouveaux champs pour la confirmation de l'e-mail de sécurité
+  isVerified        Boolean @default(false)
+  verificationToken String? @unique
 
   // Relations
   budgets       Budget[]
@@ -34,7 +36,7 @@ model User {
   refreshTokens RefreshToken[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt()
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
@@ -45,7 +47,7 @@ model RefreshToken {
   userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt()
+  updatedAt DateTime @updatedAt
   expiresAt DateTime
 
   @@map("refresh_tokens")
@@ -58,8 +60,8 @@ model Category {
   icon  String?
   type  CategoryType
 
-  createdAt DateTime @default(now()) @map("created_at")  // nom DB préservé via @map
-  updatedAt DateTime @updatedAt      @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at") // nom DB préservé via @map
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   transactions Transaction[]
   budgets      Budget[]
@@ -74,14 +76,14 @@ model Transaction {
   amount      Decimal
   date        DateTime
   description String?
-  userId      Int      @map("iduser")
-  categoryId  Int      @map("idcategory")
+  userId      Int      @map("user_id")
+  categoryId  Int      @map("category_id")
   budgetId    Int?
   updatedAt   DateTime @default(now()) @updatedAt
 
-  category Category  @relation(fields: [categoryId], references: [id])
-  User     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  budget   Budget?   @relation(fields: [budgetId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+  User     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  budget   Budget?  @relation(fields: [budgetId], references: [id])
 
   @@index([userId])
   @@index([userId, date])
@@ -89,23 +91,23 @@ model Transaction {
 }
 
 model Budget {
-  id           Int    @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   limit_amount Float
   period       PeriodType
-  id_category  Int
+  categoryId   Int
   userId       Int
 
   // Relation avec l'utilisateur (un budget appartient à un utilisateur)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Relation avec la catégorie (un budget concerne une catégorie)
-  category Category @relation(fields: [id_category], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
 
   // Relation avec les transactions (un budget peut avoir plusieurs transactions)
   transactions Transaction[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt()
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@map("budgets")
