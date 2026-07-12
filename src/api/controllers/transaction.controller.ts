@@ -145,6 +145,10 @@ export const update = async (req: Request, res: Response, next: NextFunction) =>
       body.data,
     );
 
+    if (!updatedTransaction) {
+      return res.status(404).json({ message: "Transaction introuvable ou non autorisée" });
+    }
+
     // -------------------------------------------------------------------------
     // GESTION DYNAMIQUE DES ALERTES BUDGÉTAIRES APRÈS MODIFICATION
     // -------------------------------------------------------------------------
