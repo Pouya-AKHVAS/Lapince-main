@@ -232,14 +232,14 @@ export const getBudgetStats = async (userId: number) => {
    * On récupère tous les budgets de l'utilisateur
    */
   const budgets = (await prisma.budget.findMany({
-    where: { userId },
-    include: { category: true },
-  })) as Array<{
-    id: number;
-    id_category: number;
-    limit_amount: any;
-    category: { name: string };
-  }>;
+  where: { userId },
+  include: { category: true },
+})) as unknown as Array<{
+  id: number;
+  categoryId: number;
+  limit_amount: any;
+  category: { name: string };
+}>;
 
   /**
    * On récupère toutes les transactions de l'utilisateur
@@ -260,7 +260,7 @@ export const getBudgetStats = async (userId: number) => {
      * puis on additionne les montants
      */
     const spent = transactions
-      .filter((t) => t.categoryId === b.id_category)
+      .filter((t) => t.categoryId === b.categoryId)
       .reduce((sum: number, t) => sum + Number(t.amount), 0);
 
     /**

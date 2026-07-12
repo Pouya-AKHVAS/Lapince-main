@@ -61,7 +61,7 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
     // (Appel au générateur d'alertes, logique métier séparée)
     // -------------------------------------------------------------
     const budget = await prisma.budget.findFirst({
-      where: { userId: req.user.id, id_category: transaction.categoryId },
+      where: { userId: req.user.id, categoryId: transaction.categoryId },
     });
     if (budget) {
       await generateBudgetAlert(budget.id, req.user.id);
@@ -153,7 +153,7 @@ export const update = async (req: Request, res: Response, next: NextFunction) =>
     const oldBudget = await prisma.budget.findFirst({
       where: {
         userId: req.user.id,
-        id_category: oldTransaction.categoryId,
+        categoryId: oldTransaction.categoryId,
       },
     });
     if (oldBudget) {
@@ -165,7 +165,7 @@ export const update = async (req: Request, res: Response, next: NextFunction) =>
       const newBudget = await prisma.budget.findFirst({
         where: {
           userId: req.user.id,
-          id_category: updatedTransaction.categoryId,
+          categoryId: updatedTransaction.categoryId,
         },
       });
       if (newBudget) {
@@ -212,7 +212,7 @@ export const remove = async (req: Request, res: Response, next: NextFunction) =>
     const budget = await prisma.budget.findFirst({
       where: {
         userId: req.user.id,
-        id_category: existingTransaction.categoryId,
+        categoryId: existingTransaction.categoryId,
       },
     });
 

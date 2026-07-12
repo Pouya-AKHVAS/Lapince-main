@@ -3,7 +3,7 @@ export type Budget = {
   id: number;
   limit_amount: number;
   period: "weekly" | "monthly" | "custom";
-  id_category: number;
+  categoryId: number;
   userId: number;
   createdAt: string;
   updatedAt: string;
@@ -17,7 +17,7 @@ export type Budget = {
 export type CreateBudgetPayload = {
   limit_amount: number;
   period: "weekly" | "monthly" | "custom";
-  id_category: number;
+  categoryId: number;
 };
 
 // Type pour la réponse de GET /budgets/:id/status

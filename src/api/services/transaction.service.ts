@@ -9,7 +9,7 @@ import { prisma } from "../lib/prisma.js";
 export const getAllTransactions = async (
   userId: number,
   filters: {
-    idcategory?: number | undefined;
+    categoryId?: number | undefined;
     startDate?: string | undefined;
     endDate?: string | undefined;
     page: number;
@@ -18,7 +18,7 @@ export const getAllTransactions = async (
 ) => {
   const where = {
     userId,
-    ...(filters.idcategory && { categoryId: filters.idcategory }),
+    ...(filters.categoryId && { categoryId: filters.categoryId }),
     ...(filters.startDate && { date: { gte: new Date(filters.startDate) } }),
     ...(filters.endDate && { date: { lte: new Date(filters.endDate) } }),
   };
@@ -47,7 +47,7 @@ export const getAllTransactions = async (
 export const createTransaction = async (userId: number, data: any) => {
   // A. Vérification de la catégorie
   const category = await prisma.category.findUnique({
-    where: { id: data.idcategory },
+    where: { id: data.categoryId },
   });
 
   if (!category) {
@@ -60,7 +60,7 @@ export const createTransaction = async (userId: number, data: any) => {
       userId,
       amount: data.amount,
       date: new Date(data.date),
-      categoryId: data.idcategory,
+      categoryId: data.categoryId,
       description: data.description,
       budgetId: data.budgetId ? Number(data.budgetId) : null,
     },
@@ -85,19 +85,18 @@ export const updateTransaction = async (
   userId: number,
   data: any,
 ) => {
-  // On passe la date en objet Date si elle a été modifiée
   const updateData: any = { ...data };
   if (data.date) updateData.date = new Date(data.date);
 
-  // Mappage des champs idcategory -> categoryId si présent
-  if (data.idcategory) {
-    updateData.categoryId = data.idcategory;
-    delete updateData.idcategory;
-  }
-
-  return prisma.transaction.update({
-    where: { id }, // On identifie la transaction à mettre à jour par son ID
+  const result = await prisma.transaction.updateMany({
+    where: { id, userId },
     data: updateData,
+  });
+
+  if (result.count === 0) return null;
+
+  return prisma.transaction.findFirst({
+    where: { id, userId },
     include: { category: true },
   });
 };

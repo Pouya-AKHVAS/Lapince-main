@@ -28,7 +28,7 @@ export const createBudget = async (userId: number, data: any) => {
   return prisma.budget.create({
     data: {
       userId,
-      id_category: data.id_category,
+      categoryId: data.categoryId,
       limit_amount: data.limit_amount,
       period: data.period,
     },
@@ -52,9 +52,16 @@ export const getBudgetById = async (id: number, userId: number) => {
 // 4. Mettre à jour un budget existant
 // -------------------------------------------------------------
 export const updateBudget = async (id: number, userId: number, data: any) => {
-  return prisma.budget.update({
-    where: { id },
+  const result = await prisma.budget.updateMany({
+    where: { id, userId },
     data,
+  });
+
+  if (result.count === 0) return null;
+
+  return prisma.budget.findFirst({
+    where: { id, userId },
+    include: { category: true },
   });
 };
 
@@ -62,8 +69,8 @@ export const updateBudget = async (id: number, userId: number, data: any) => {
 // 5. Supprimer un budget
 // -------------------------------------------------------------
 export const deleteBudget = async (id: number, userId: number) => {
-  return prisma.budget.delete({
-    where: { id },
+  return prisma.budget.deleteMany({
+    where: { id, userId },
   });
 };
 

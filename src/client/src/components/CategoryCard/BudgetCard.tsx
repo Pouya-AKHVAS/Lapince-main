@@ -43,7 +43,7 @@ export default function BudgetCard() {
       await createBudget({
         limit_amount: amount,
         period: "monthly",
-        id_category: categoryId,
+        categoryId: categoryId,
       });
       setMontant("");
       setMois("");
