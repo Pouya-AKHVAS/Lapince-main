@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /accueil
+Disallow: /parametres
+Disallow: /dashboard
+Disallow: /auth/verify/
+
+Sitemap: https://lapince.pooya-dev.com/sitemap.xml
