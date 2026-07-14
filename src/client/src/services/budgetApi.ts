@@ -54,12 +54,10 @@ export async function deleteBudget(id: number): Promise<void> {
     const response = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
         credentials: "include",
-    })
+    });
     if (!response.ok) {
-        throw new Error(`Erreur ${response.status} en supprimant le budget`)
+        throw new Error(`Erreur ${response.status} en supprimant le budget`);
     }
-    return response.json()
-
 }
 
 // GET /budgets/:id/status — dépensé / restant / pourcentage

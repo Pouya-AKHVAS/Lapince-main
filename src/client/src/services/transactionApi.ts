@@ -8,7 +8,7 @@ export interface TransactionPayload {
   amount: number;
   date: string;
   description: string;
-  idcategory: number;
+  categoryId: number;
 }
 
 export interface PaginatedTransactions {

@@ -57,7 +57,7 @@ export default function DepenseCard({ onSuccess }: { onSuccess?: () => void }) {
                     amount: Math.abs(Number(montant)),
                     date: new Date(date).toISOString(),
                     description: transaction,
-                    idcategory: Number(categorie),
+                    categoryId: Number(categorie),
                   });
                   setTransaction("");
                   setMontant("");
