@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import type { LoginCredentials } from "../../services/authApi";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-
+import { Link } from "react-router-dom";
 /**
  * Interface pour typer l'objet d'erreur provenant du backend
  */
@@ -130,12 +130,9 @@ export default function LoginForm({
 
       <p className="text-center text-[11px] font-bold mt-4 text-[#002b49]">
         Pas encore de compte ?
-        <a
-          href="/register"
-          className="underline ml-1 hover:text-blue-700 transition-colors"
-        >
-          Créer un compte
-        </a>
+        <Link to="/register" className="underline ml-1 hover:text-blue-700 transition-colors">
+  Créer un compte
+</Link>
       </p>
     </form>
   );

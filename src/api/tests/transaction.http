@@ -12,7 +12,7 @@ Cookie: accessToken={{token}}
 ### ----------------------------------------------------
 ### 2. GET - Récupérer avec des filtres
 ### ----------------------------------------------------
-GET {{baseUrl}}/transactions?idcategory=1&startDate=2026-04-01T00:00:00Z
+GET {{baseUrl}}/transactions?categoryId=1&startDate=2026-04-01T00:00:00Z
 Cookie: accessToken={{token}}
 
 ### ----------------------------------------------------
@@ -26,7 +26,7 @@ Cookie: accessToken={{token}}
   "amount": 600,
   "date": "2026-04-30T10:00:00.000Z",
   "description": "Test Carburant",
-  "idcategory": 20,
+  "categoryId": 20,
   "budgetId": 16
 }
 

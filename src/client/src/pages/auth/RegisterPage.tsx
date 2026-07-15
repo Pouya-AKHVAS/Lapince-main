@@ -6,6 +6,8 @@ import Footer from "../../components/Footer/footer";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { AnimatedOrbBackground } from "../../components/AnimatedOrbBackground/AnimatedOrbBackground";
+import { Link } from "react-router-dom";
+
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -177,9 +179,9 @@ export default function RegisterPage() {
         {/* Lien de redirection */}
         <p className="text-sm font-bold shrink-0 mb-10">
           Déjà un compte ?{" "}
-          <a href="/login" className="underline ml-1">
+          <Link to="/login" className="underline ml-1">
             Se connecter
-          </a>
+          </Link>
         </p>
 
       </div>

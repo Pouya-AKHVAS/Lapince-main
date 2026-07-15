@@ -1,0 +1,461 @@
+openapi: 3.0.0
+info:
+  title: La Pince API
+  version: 1.0.0
+  description: API REST de gestion de budget personnel — inscription, transactions, budgets et alertes.
+servers:
+  - url: https://lapince.pooya-dev.com/api
+    description: Production
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: accessToken
+  schemas:
+    Category:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        color: { type: string, nullable: true }
+        icon: { type: string, nullable: true }
+        type: { type: string, enum: [EXPENSE, INCOME] }
+    Transaction:
+      type: object
+      properties:
+        id: { type: integer }
+        amount: { type: number }
+        date: { type: string, format: date-time }
+        description: { type: string, nullable: true }
+        categoryId: { type: integer }
+        budgetId: { type: integer, nullable: true }
+    Budget:
+      type: object
+      properties:
+        id: { type: integer }
+        limit_amount: { type: number }
+        period: { type: string, enum: [weekly, monthly, custom] }
+        categoryId: { type: integer }
+    Alert:
+      type: object
+      properties:
+        id: { type: integer }
+        exceededAmount: { type: number }
+        isRead: { type: boolean }
+        categoryId: { type: integer }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        first_name: { type: string }
+        last_name: { type: string }
+        email: { type: string }
+        photo: { type: string, nullable: true }
+
+security:
+  - cookieAuth: []
+
+paths:
+  # ---------- AUTH ----------
+  /auth/register:
+    post:
+      tags: [Authentification]
+      summary: Créer un compte utilisateur
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [first_name, last_name, email, password]
+              properties:
+                first_name: { type: string }
+                last_name: { type: string }
+                email: { type: string }
+                password: { type: string }
+                photo: { type: string, nullable: true }
+      responses:
+        "201": { description: "Compte créé, e-mail de vérification envoyé" }
+        "400": { description: "Données invalides (Zod)" }
+        "409": { description: "E-mail déjà utilisé" }
+
+  /auth/login:
+    post:
+      tags: [Authentification]
+      summary: Se connecter
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        "200": { description: "Connecté, cookies httpOnly (accessToken, refreshToken) déposés" }
+        "401": { description: "Identifiants invalides" }
+        "403": { description: "Compte non vérifié" }
+
+  /auth/logout:
+    post:
+      tags: [Authentification]
+      summary: Se déconnecter
+      responses:
+        "204": { description: "Déconnexion réussie" }
+
+  /auth/refresh:
+    post:
+      tags: [Authentification]
+      summary: Renouveler l'access token via le refresh token (cookie)
+      security: []
+      responses:
+        "200": { description: "Nouveau access token émis" }
+        "401": { description: "Refresh token invalide ou expiré" }
+
+  /auth/verify/{token}:
+    get:
+      tags: [Authentification]
+      summary: Confirmer l'inscription via le lien reçu par e-mail
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "302": { description: "Redirection vers /login?verified=true" }
+        "404": { description: "Jeton invalide ou expiré" }
+
+  # ---------- USERS ----------
+  /users/me:
+    get:
+      tags: [Utilisateur]
+      summary: Récupérer le profil de l'utilisateur connecté
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+    patch:
+      tags: [Utilisateur]
+      summary: Mettre à jour le profil (mise à jour partielle)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name: { type: string }
+                last_name: { type: string }
+                email: { type: string }
+                password: { type: string }
+                photo: { type: string, nullable: true }
+      responses:
+        "200": { description: "Profil mis à jour" }
+        "409": { description: "E-mail déjà utilisé" }
+    delete:
+      tags: [Utilisateur]
+      summary: Supprimer définitivement le compte (RGPD)
+      responses:
+        "200": { description: "Compte supprimé" }
+
+  # ---------- CATEGORIES ----------
+  /categories:
+    get:
+      tags: [Catégories]
+      summary: Lister toutes les catégories (communes à tous les utilisateurs)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Category" }
+
+  /categories/{id}:
+    get:
+      tags: [Catégories]
+      summary: Récupérer une catégorie par ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+        "404": { description: "Catégorie introuvable" }
+
+  # ---------- TRANSACTIONS ----------
+  /transactions:
+    get:
+      tags: [Transactions]
+      summary: Lister les transactions de l'utilisateur (paginé, filtrable)
+      parameters:
+        - name: categoryId
+          in: query
+          schema: { type: integer }
+        - name: startDate
+          in: query
+          schema: { type: string, format: date-time }
+        - name: endDate
+          in: query
+          schema: { type: string, format: date-time }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [Transactions]
+      summary: Créer une transaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, date, categoryId]
+              properties:
+                amount: { type: number }
+                date: { type: string, format: date-time }
+                description: { type: string }
+                categoryId: { type: integer }
+                budgetId: { type: integer, nullable: true }
+      responses:
+        "201": { description: "Transaction créée (une alerte est générée si le budget est dépassé)" }
+        "400": { description: "Données invalides" }
+
+  /transactions/{id}:
+    get:
+      tags: [Transactions]
+      summary: Récupérer une transaction par ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+        "404": { description: "Introuvable ou non autorisée" }
+    patch:
+      tags: [Transactions]
+      summary: Mettre à jour une transaction (partiel)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number }
+                date: { type: string, format: date-time }
+                description: { type: string }
+                categoryId: { type: integer }
+      responses:
+        "200": { description: "Mise à jour effectuée" }
+        "404": { description: "Introuvable ou non autorisée" }
+    delete:
+      tags: [Transactions]
+      summary: Supprimer une transaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: "Supprimée" }
+
+  # ---------- BUDGETS ----------
+  /budgets:
+    get:
+      tags: [Budgets]
+      summary: Lister les budgets de l'utilisateur
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Budget" }
+    post:
+      tags: [Budgets]
+      summary: Créer un budget
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [limit_amount, period, categoryId]
+              properties:
+                limit_amount: { type: number }
+                period: { type: string, enum: [weekly, monthly, custom] }
+                categoryId: { type: integer }
+      responses:
+        "201": { description: "Budget créé" }
+
+  /budgets/{id}:
+    get:
+      tags: [Budgets]
+      summary: Récupérer un budget par ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+        "404": { description: "Budget introuvable" }
+    patch:
+      tags: [Budgets]
+      summary: Mettre à jour un budget (partiel)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                limit_amount: { type: number }
+                period: { type: string, enum: [weekly, monthly, custom] }
+                categoryId: { type: integer }
+      responses:
+        "200": { description: "Mis à jour" }
+    delete:
+      tags: [Budgets]
+      summary: Supprimer un budget
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: "Supprimé" }
+
+  /budgets/{id}/status:
+    get:
+      tags: [Budgets]
+      summary: Obtenir le statut d'un budget (dépensé, restant, %)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  budgetId: { type: integer }
+                  category: { type: string }
+                  limit: { type: number }
+                  spent: { type: number }
+                  remaining: { type: number }
+                  percent: { type: number }
+
+  # ---------- ALERTS ----------
+  /alerts:
+    get:
+      tags: [Alertes]
+      summary: Lister les alertes de l'utilisateur
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Alert" }
+
+  /alerts/{id}:
+    get:
+      tags: [Alertes]
+      summary: Récupérer une alerte par ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+        "404": { description: "Alerte introuvable" }
+    delete:
+      tags: [Alertes]
+      summary: Supprimer une alerte
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: "Supprimée" }
+
+  /alerts/{id}/read:
+    patch:
+      tags: [Alertes]
+      summary: Marquer une alerte comme lue
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: "Marquée comme lue" }
+
+  /alerts/read-all:
+    patch:
+      tags: [Alertes]
+      summary: Marquer toutes les alertes comme lues
+      responses:
+        "200": { description: "Toutes les alertes marquées comme lues" }
+
+  # ---------- STATS ----------
+  /stats/overview:
+    get:
+      tags: [Statistiques]
+      summary: "Résumé du dashboard : revenus, dépenses, balance"
+      responses:
+        "200": { description: OK }
+
+  /stats/monthly:
+    get:
+      tags: [Statistiques]
+      summary: Analyse mensuelle (revenus/dépenses par mois)
+      responses:
+        "200": { description: OK }
+
+  /stats/categories:
+    get:
+      tags: [Statistiques]
+      summary: Répartition des dépenses par catégorie
+      responses:
+        "200": { description: OK }
+
+  /stats/budgets:
+    get:
+      tags: [Statistiques]
+      summary: Suivi des budgets (limite, dépensé, restant, %)
+      responses:
+        "200": { description: OK }

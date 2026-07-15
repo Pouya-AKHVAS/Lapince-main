@@ -1,5 +1,5 @@
 import type { AuthUser } from "../types/auth";
-
+import { apiFetch } from "./apiFetch";
 /**
  * ------------------------------------------------------------
  * fetchUserProfile()
@@ -12,11 +12,11 @@ import type { AuthUser } from "../types/auth";
  * ------------------------------------------------------------
  */
 export async function fetchUserProfile(): Promise<AuthUser> {
-  const response = await fetch(
+  const response = await apiFetch(
     `${import.meta.env.VITE_API_BASE_URL}/users/me`,
     {
       method: "GET",
-      credentials: "include", // envoie automatiquement les cookies
+      cache: "no-store",
     },
   );
 
@@ -57,11 +57,11 @@ export async function updateUserProfile(payload: {
   password?: string;
   photo?: string | null;
 }) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${import.meta.env.VITE_API_BASE_URL}/users/me`,
     {
       method: "PATCH",
-      credentials: "include",
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
       },
@@ -95,11 +95,11 @@ export async function updateUserProfile(payload: {
  * ------------------------------------------------------------
  */
 export async function deleteUserAccount(): Promise<void> {
-  const response = await fetch(
+  const response = await apiFetch(
     `${import.meta.env.VITE_API_BASE_URL}/users/me`,
     {
       method: "DELETE",
-      credentials: "include",
+      cache: "no-store",
     },
   );
 

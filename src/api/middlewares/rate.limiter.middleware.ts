@@ -7,7 +7,7 @@ max: 20, // Chaque adresse IP peut envoyer un maximum de 20 requêtes en 15 minu
 message: {
 success: false,
 
-message: "Trop de tentatives. Veuillez réessayer après 15 minutes." // Message en français pour le jury
+message: "Trop de tentatives. Veuillez réessayer après 15 minutes." 
 },
 standardHeaders: true, // Renvoie les informations de limite dans l'en-tête de réponse
 legacyHeaders: false, // Désactive les en-têtes anciens et obsolètes

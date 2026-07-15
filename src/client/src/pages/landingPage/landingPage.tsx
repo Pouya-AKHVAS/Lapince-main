@@ -1,5 +1,6 @@
 import Footer from "../../components/Footer/footer";
 import { AnimatedOrbBackground } from "../../components/AnimatedOrbBackground/AnimatedOrbBackground";
+import { Link } from "react-router-dom";
 
 export default function LandingPage() {
   // Style du bouton blanc "S'inscrire"
@@ -43,12 +44,12 @@ export default function LandingPage() {
 
         {/* Bouton Connexion Haut Droite */}
         <div className="absolute top-6 right-6 z-50 pointer-events-auto">
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="px-8 py-2 bg-[#002b49] text-white rounded-full font-bold text-xs shadow-lg hover:bg-[#003b63] transition-colors"
           >
             Connexion
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -75,12 +76,12 @@ export default function LandingPage() {
           alt="Logo Round"
         />
         <div className="absolute top-6 right-6 z-50">
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="px-8 py-2 bg-[#002b49] text-white rounded-full font-bold text-xs shadow-lg hover:bg-[#003b63] transition-colors"
           >
             Connexion
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -112,9 +113,9 @@ export default function LandingPage() {
         {/* Features + Bouton côte à côte (lg) */}
         <div className="hidden lg:flex flex-row items-center mt-2">
           <div className="w-[480px] shrink-0 pl-28 flex items-center">
-            <a href="/register" className={mainButtonStyle}>
+            <Link to="/register" className={mainButtonStyle}>
               S'inscrire
-            </a>
+            </Link>
           </div>
           <section className="space-y-1 w-fit shrink-0 relative z-30">
             {[
@@ -138,9 +139,9 @@ export default function LandingPage() {
 
         {/* Bouton d'action (mobile / md seulement) */}
         <div className="flex lg:hidden justify-center translate-y-30 md:translate-y-0 md:justify-start mt-10 md:mt-14 pb-16 shrink-0 relative z-30">
-          <a href="/register" className={mainButtonStyle}>
+          <Link to="/register" className={mainButtonStyle}>
             S'inscrire
-          </a>
+          </Link>
         </div>
       </div>
 

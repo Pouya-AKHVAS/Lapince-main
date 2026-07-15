@@ -3,6 +3,7 @@ import { useState } from "react";
 import { cn } from "../../lib/utils";
 import type { RegisterFormData, ApiError } from "../../types/auth";
 
+
 interface RegisterFormProps {
   onSubmit: (data: RegisterFormData) => void;
   isLoading: boolean;

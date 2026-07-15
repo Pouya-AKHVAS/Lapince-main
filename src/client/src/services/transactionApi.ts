@@ -1,4 +1,5 @@
 import type { Transaction } from "../types/transaction";
+import { apiFetch } from "./apiFetch";
 
 const API_URL = `${import.meta.env.VITE_API_BASE_URL}/transactions`;
 
@@ -23,9 +24,8 @@ export async function fetchTransactions(
   page = 1,
   limit = 20,
 ): Promise<PaginatedTransactions> {
-  const response = await fetch(`${API_URL}?page=${page}&limit=${limit}`, {
+  const response = await apiFetch(`${API_URL}?page=${page}&limit=${limit}`, {
     method: "GET",
-    credentials: "include",
     cache: "no-store",
   });
   if (!response.ok) {
@@ -41,10 +41,9 @@ export async function fetchTransactions(
 export async function createTransaction(
   data: TransactionPayload,
 ): Promise<Transaction> {
-  const response = await fetch(API_URL, {
+  const response = await apiFetch(API_URL, {
     method: "POST",
     headers: { "Content-type": "application/json" },
-    credentials: "include",
     body: JSON.stringify(data),
   });
   if (!response.ok) {
@@ -59,11 +58,11 @@ export async function createTransaction(
 
 // DELETE transactions - supprimer une transaction
 export async function deleteTransactionApi(id: number) {
-  const res = await fetch(
+  const res = await apiFetch(
     `${import.meta.env.VITE_API_BASE_URL}/transactions/${id}`,
     {
       method: "DELETE",
-      credentials: "include",
+      
     },
   );
   if (!res.ok) throw new Error("Delete failed");
@@ -81,11 +80,10 @@ export async function updateTransactionApi(t: Transaction) {
     categoryId: t.category.id,
   };
 
-  const res = await fetch(
+  const res = await apiFetch(
     `${import.meta.env.VITE_API_BASE_URL}/transactions/${t.id}`,
     {
       method: "PATCH",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     },

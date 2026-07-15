@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 /**
  * Interface pour la structure d'un élément de navigation
  */
@@ -68,26 +70,25 @@ export default function Footer({
       <footer className="md:hidden w-full h-[35px] bg-white flex items-center px-4 relative border-t border-gray-100">
         {/* Affichage des Mentions Légales si aucune icône n'est active */}
         {!showIcons || visibleItems.length === 0 ? (
-          <a
-            href="/mentions-legales"
+          <Link to="/mentions-legales"
             className="w-full text-center text-[9px] font-bold text-[#002b49] opacity-70 uppercase hover:opacity-100 transition-opacity"
           >
             Mentions légales
-          </a>
+          </Link>
         ) : (
           /* Affichage dynamique des icônes sélectionnées */
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-15">
             {visibleItems.map((item) => (
-              <a
+              <Link
                 key={item.id}
-                href={item.href}
+                to={item.href}
                 className="flex items-center gap-1.5 shrink-0"
               >
                 <img src={item.src} className="w-4 h-4 object-contain" alt="" />
                 <span className="text-[9px] font-black uppercase text-[#002b49]">
                   {item.label}
                 </span>
-              </a>
+              </Link>
             ))}
           </div>
         )}
@@ -98,8 +99,7 @@ export default function Footer({
       {/* ------------------------------------------------------------ */}
       <footer className="hidden md:flex w-full h-[50px] bg-white items-center px-10 relative border-t border-gray-100">
         {/* Texte aligné à gauche si icônes présentes, sinon centré */}
-        <a
-          href="/mentions-legales"
+        <Link to="/mentions-legales"
           className={`text-[11px] font-bold text-[#002b49] opacity-70 uppercase hover:opacity-100 transition-opacity ${
             showIcons && visibleItems.length > 0
               ? "text-left"
@@ -107,22 +107,22 @@ export default function Footer({
           }`}
         >
           Mentions légales
-        </a>
+        </Link>
 
         {/* Bloc central des icônes sélectionnées */}
         {showIcons && visibleItems.length > 0 && (
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-50">
             {visibleItems.map((item) => (
-              <a
+              <Link
                 key={item.id}
-                href={item.href}
+                to={item.href}
                 className="flex items-center gap-2.5 hover:scale-105 transition-all group shrink-0"
               >
                 <img src={item.src} className="w-5 h-5 object-contain" alt="" />
                 <span className="text-[11px] font-black uppercase tracking-widest text-[#002b49]">
                   {item.label}
                 </span>
-              </a>
+              </Link>
             ))}
           </div>
         )}
