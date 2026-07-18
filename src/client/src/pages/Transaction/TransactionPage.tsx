@@ -105,12 +105,12 @@ export default function TransactionPage() {
       {/* Logo La Pince — classes identiques à la page login */}
       <img
         src="/WEBP/Mobile/Lapince-Logo-Mobile.webp"
-        className="absolute top-6 left-6 w-28 z-[11] md:hidden"
+        className="absolute top-6 left-6 w-18 z-[11] md:hidden"
         alt="Logo Mobile"
       />
       <img
         src="/WEBP/Desktop/Lapince-Logo-Desktop.webp"
-        className="absolute top-10 left-15 w-24 lg:w-60 z-[11] transition-all hidden md:block"
+        className="absolute top-10 left-15 w-24 lg:w-35 z-[11] transition-all hidden md:block"
         alt="Logo"
       />
 

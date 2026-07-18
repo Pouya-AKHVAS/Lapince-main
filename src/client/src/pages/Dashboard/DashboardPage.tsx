@@ -227,7 +227,7 @@ export default function DashboardPage() {
       {/* Logos */}
       <img
         src="/WEBP/Mobile/Lapince-Logo-Mobile.webp"
-        className="absolute top-6 left-6 w-24 z-[11] md:hidden"
+        className="absolute top-6 left-6 w-18 z-[11] md:hidden"
         alt="Logo"
       />
       <img
