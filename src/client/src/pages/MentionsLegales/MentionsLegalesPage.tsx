@@ -62,7 +62,6 @@ export default function MentionsLegalesPage() {
 
   return (
     <main className="fixed inset-0 w-full h-full overflow-hidden font-sans text-[#002b49]">
-
       <AnimatedOrbBackground />
 
       {/* image décorative en arrière-plan, non interactive */}
@@ -80,12 +79,12 @@ export default function MentionsLegalesPage() {
       {/* logo mobile uniquement — caché à partir de md */}
       <img
         src="/WEBP/Mobile/Lapince-Logo-Mobile.webp"
-        className="absolute top-6 left-6 w-28 z-50 md:hidden"
+        className="absolute top-6 left-6 w-24 z-50 md:hidden"
         alt="Logo La Pince"
       />
       <img
         src="/WEBP/Desktop/Lapince-Logo-Desktop.webp"
-        className="absolute top-10 left-15 w-24 lg:w-60 z-50 transition-all hidden md:block"
+        className="absolute top-10 left-15 w-20 lg:w-35 z-50 transition-all hidden md:block"
         alt="Logo La Pince"
       />
 
@@ -124,16 +123,17 @@ export default function MentionsLegalesPage() {
             />
             <LegalRow label="Directeur de la publication" value="L'équipe :)" />
             {/* email cliquable grâce à isEmail */}
-            <LegalRow label="Contact" value="cherki.m3hdi@gmail.com" isEmail />
+            <LegalRow label="Contact" value="pooya.akhvas@oclock.school" isEmail />
           </LegalSection>
 
           <LegalSection title="Hébergement">
+            <LegalRow label="Hébergeur" value="Hetzner Online GmbH" />
+            <LegalRow label="Site web" value="https://www.hetzner.com" />
+            <LegalRow label="Nom de domaine" value="lapince.pooya-dev.com" />
             <LegalRow
-              label="Hébergeur"
-              value="O'Clock — plateforme eddi.cloud"
+              label="Adresse"
+              value="Industriestr. 25, 91710 Gunzenhausen, Allemagne"
             />
-            <LegalRow label="Site web" value="https://oclock.io" />
-            <LegalRow label="Adresse" value="Paris, France" />
           </LegalSection>
 
           <LegalSection title="Propriété intellectuelle">
@@ -184,10 +184,10 @@ export default function MentionsLegalesPage() {
             <p className="text-sm font-bold leading-relaxed opacity-80 mt-2">
               Pour exercer vos droits :{" "}
               <a
-                href="mailto:cherki.m3hdi@gmail.com"
+                href="mailto:pooya.akhvas@oclock.school"
                 className="underline hover:opacity-70 transition-opacity"
               >
-                cherki.m3hdi@gmail.com
+                pooya.akhvas@oclock.school
               </a>
             </p>
           </LegalSection>
